@@ -20,6 +20,8 @@ use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeMail;
 
 class AuthController extends Controller
 {
@@ -38,20 +40,16 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'activation_token' => Str::random(60), // Generate activation token
         ]);
 
-        $user->ulid = Str::ulid()->toBase32();
-        $user->save();
-
-        $user->assignRole('user');
-
-        event(new Registered($user));
+        // Send activation email
+        Mail::to($user->email)->send(new WelcomeMail($user));
 
         return response()->json([
             'ok' => true,
         ], 201);
     }
-
     /**
      * Redirect to provider for authentication
      */
